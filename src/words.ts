@@ -5,6 +5,7 @@ export type Pitch = number | Ref
 export interface Cue {
   at: number
   inst?: string
+  drum?: boolean
   pitches: Pitch[]
   length: number
   dynamic?: number
@@ -125,6 +126,7 @@ export const cue = (words: string[], isInst: (word: string) => boolean, drum = f
   if (rest.length && isInst(rest[0])) {
     out.inst = rest.shift()!
     drum = drum || isDrum(out.inst)
+    if (drum) out.drum = true
   }
   while (rest.length && !isDuration(rest[0])) {
     const word = rest.shift()!

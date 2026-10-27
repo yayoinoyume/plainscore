@@ -134,7 +134,7 @@ export const toAbc = (r: Rendering) => {
     'M:4/4',
     'L:1/16',
     `Q:1/4=${r.tempo}`,
-    ...perc.map(({ pitch, midi }) => `%%percmap ${pitch} ${midi} x`),
+    ...perc.map(({ pos, sound }) => `%%percmap x${pos} ${sound} x`),
     `%%score ${group}`,
     ...voices.map((v) => `V:${v.id} clef=${v.clef}${name(v)}${stem(v)}`),
     ...[...pedals.keys()].map((id) => `V:${id}Pedal clef=bass`),

@@ -107,15 +107,19 @@ describe('the drums family', () => {
     expect(kit.pitches).toEqual(new Set([DRUMS.kick, DRUMS.snare]))
   })
 
-  it('engraves drum hits as legal ABC with a percmap', () => {
+  it('engraves drum hits as legal ABC with a percmap per staff position', () => {
     const abc = toAbc(rendering)
     expect(abc).toContain('V:kit clef=perc name="Kit"')
-    expect(abc).toContain(`%%percmap D4 ${DRUMS.kick} x`)
-    expect(abc).toContain(`%%percmap F4 ${DRUMS.snare} x`)
+    // abcjs keys a percussion note by x + verticalPos, and a digit after a note is its length, not its octave.
+    expect(abc).toContain(`%%percmap x1 ${DRUMS.kick} x`)
+    expect(abc).toContain(`%%percmap x3 ${DRUMS.snare} x`)
     const kit = abc.split('\n').filter((line) => line.startsWith('[V:kit]')).join('\n')
-    expect(kit).toContain('D4')
-    expect(kit).toContain('F4')
-    expect(kit).not.toMatch(/[A-G][#b]?[,']*\d*[^\d]*\b(kick|snare)\b/)
+    expect(kit).not.toMatch(/\b(kick|snare)\b/)
+    for (const note of kit.match(/[A-Ga-g][,']*\d*/g) ?? []) {
+      const letters = note.replace(/\d+$/, '')
+      expect(letters).toMatch(/^[A-G]$|^[a-g]['`']*$/)
+      expect(Number(note.slice(letters.length) || 1)).toBeLessThanOrEqual(16)
+    }
   })
 
   it('takes a drum cue and refuses a pedal', () => {
