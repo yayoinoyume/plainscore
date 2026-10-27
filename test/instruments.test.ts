@@ -126,9 +126,9 @@ describe('the drums family', () => {
 
   it('keys every drum on its own abcjs note name', () => {
     const names = drumMap(Object.values(DRUMS).map((midi) => ({ midi }) as never)).map((d) => d.pitch)
-    expect(names.length).toBe(Object.keys(DRUMS).length)
-    expect(new Set(names).size).toBe(names.length)
-    expect(names.every((n) => /^\^?[A-Ga-g]'*$/.test(n))).toBe(true)
+    // Pinned, because abcjs pitchMap reaches position 16 only and the last two hits borrow a sharp.
+    // A name that is merely unique (f', g') would pass a uniqueness check and still be dead in abcjs.
+    expect(names).toEqual(['C', 'D', 'E', 'F', 'G', 'A', 'B', 'c', 'd', 'e', 'f', 'g', 'a', 'b', "c'", "d'", "e'", '^D', '^F'])
   })
 
   it('takes a drum cue and refuses a pedal', () => {
