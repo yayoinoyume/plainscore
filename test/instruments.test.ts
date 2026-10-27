@@ -79,7 +79,8 @@ describe('the guitar families', () => {
   })
 
   it('rings like a plucked string, without a pedal', () => {
-    expect(FAMILIES.guitar).toEqual({ clef: 'treble', grand: false, program: 25, pedal: false, rings: true })
+    for (const family of ['guitar', 'electric', 'distortion'])
+      expect(FAMILIES[family]).toMatchObject({ clef: 'treble', grand: false, pedal: false, rings: true })
   })
 
   it('writes the program into the MIDI track', () => {
@@ -106,11 +107,27 @@ describe('the drums family', () => {
     expect(kit.pitches).toEqual(new Set([DRUMS.kick, DRUMS.snare]))
   })
 
-  it('engraves drum words on a perc staff', () => {
+  it('engraves drum hits as legal ABC with a percmap', () => {
     const abc = toAbc(rendering)
     expect(abc).toContain('V:kit clef=perc name="Kit"')
-    expect(abc).toContain('kick')
-    expect(abc).toContain('snare')
+    expect(abc).toContain(`%%percmap D4 ${DRUMS.kick} x`)
+    expect(abc).toContain(`%%percmap F4 ${DRUMS.snare} x`)
+    const kit = abc.split('\n').filter((line) => line.startsWith('[V:kit]')).join('\n')
+    expect(kit).toContain('D4')
+    expect(kit).toContain('F4')
+    expect(kit).not.toMatch(/[A-G][#b]?[,']*\d*[^\d]*\b(kick|snare)\b/)
+  })
+
+  it('takes a drum cue and refuses a pedal', () => {
+    const cue = text.replace('  part beat  kit  mf\n    | kick e r e snare e r e kick e r e snare e r e |\n    | kick e r e snare e r e kick e r e snare e r e |', '  part beat  kit  mf\n    1  kick  q\n    3  snare  q')
+    const played = render(checkScore(cue, 'band.score'), 'band')
+    expect(new Set(played.events.filter((e) => e.part === 'beat').map((e) => e.midi))).toEqual(new Set([DRUMS.kick, DRUMS.snare]))
+    expect(() => checkScore(text.replace('  part beat  kit  mf', '  part beat  kit  mf\n    1  Ped.'), 'band.score')).toThrow(/drums part takes no pedal/)
+  })
+
+  it('keeps drum hits off the key in a transposed section', () => {
+    const moved = render(checkScore(text.replace('    A  loop\n', '    A  loop in E\n'), 'band.score'), 'band')
+    expect(new Set(moved.events.filter((e) => e.part === 'beat').map((e) => e.midi))).toEqual(new Set([DRUMS.kick, DRUMS.snare]))
   })
 
   it('refuses a drum word on a pitched part', () => {

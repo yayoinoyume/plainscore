@@ -408,7 +408,7 @@ export const parseScore = (text: string, file = 'score'): ScoreFile => {
           part.span += bars.span
         } else {
           if (part.span) throw new Error('bars and cues cannot share a part')
-          const parsed = cue(words, isInst, part.drum)
+          const parsed = cue(words, isInst, part.drum, isDrum)
           if (parsed.at % 1) needs(next(), `"${words[0]}"`)
           lines.set(parsed, n)
           part.cues.push(parsed)
@@ -500,9 +500,11 @@ const checkPiece = (score: ScoreFile, p: PieceSource, rowText: Map<Row, string[]
       const source = part(x.doubles.source)
       if (!source) fail(where, `"${x.doubles.source}" is not a part`)
       if (source!.doubles || source!.adlib) fail(where, `${x.name} cannot double ${source!.name}, which is itself a double or ad lib.`)
+      if (source!.drum !== x.drum) fail(where, `${x.name} cannot double ${source!.name}: one is a drums part and the other is not`)
     }
     if (x.adlib) {
       if (!x.inst) fail(where, `the ad lib. part ${x.name} needs an instrument`)
+      if (x.drum) fail(where, `the ad lib. part ${x.name} names pitches; a drums part names hits`)
       const avoid = x.adlib.avoid ? part(x.adlib.avoid) : undefined
       const bars = avoid?.doubles ? part(avoid.doubles.source)?.span : avoid?.span
       if (x.adlib.avoid && !bars) fail(where, `"${x.adlib.avoid}" is not a part written in bars`)

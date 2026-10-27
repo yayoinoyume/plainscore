@@ -209,7 +209,7 @@ export const expand = (score: ScoreFile, id: string, variant: string | null = nu
           const level = ramp(n.at, opt.ramp?.[0] ?? opt.dynamic ?? n.dynamic ?? part.dynamic ?? fail(part.line, `${name} needs a dynamic`)) * shade(k)
           const length = part.ring ?? n.length + (part.overlap ?? 0)
           const { step, late } = timing(n.at)
-          events.push({ ...base, ...mixOf(name, inst), inst, role: null, rolled: false, level, velocity: level, midi: part.drum ? n.midi : n.midi + shift, length, written: n.length, offset: late, step })
+          events.push({ ...base, ...mixOf(name, inst), inst, role: null, rolled: false, level, velocity: level, midi: n.midi + shift, length, written: n.length, offset: late, step })
         }
         for (const h of part.hairpins) if (playsIn(Math.floor(h.at / BAR))) hairpins.push({ part: part.name, at: bar * BAR + h.at, end: bar * BAR + h.end, up: h.up })
         continue
@@ -246,7 +246,7 @@ export const expand = (score: ScoreFile, id: string, variant: string | null = nu
               rolled: roll > 0,
               level: (level + rise(i)) * shade(k),
               velocity: (level + c.accent + rise(i)) * shade(k),
-              midi: part.drum ? midi : midi + shift,
+              midi: midi + shift,
               length: c.length,
               written: c.length,
               offset: late + i * roll,
