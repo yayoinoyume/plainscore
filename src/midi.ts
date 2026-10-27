@@ -55,7 +55,8 @@ export const toMidi = (r: Rendering) => {
     ...r.clock.flatMap((seconds, step) => (step && Math.abs(seconds - r.clock[step - 1]) > 1e-9 ? [{ tick: tick(step), bytes: tempo(seconds) }] : [])),
   ])
   const tracks = staves.map((staff, i) => {
-    const channel = i >= PERCUSSION ? i + 1 : i
+    const drums = staff.clef === 'perc'
+    const channel = drums ? PERCUSSION : i >= PERCUSSION ? i + 1 : i
     const notes = r.events
       .filter((e) => staffOf(e) === staff.id)
       .flatMap((e) => {
@@ -68,7 +69,7 @@ export const toMidi = (r: Rendering) => {
       })
       .concat(staff.pedal ? pedal(r, staff, channel) : [])
       .sort((a, b) => a.tick - b.tick || a.order - b.order)
-    return track([{ tick: 0, bytes: text(0x03, staff.name) }, { tick: 0, bytes: [0xc0 | channel, staff.program] }, ...notes])
+    return track([{ tick: 0, bytes: text(0x03, staff.name) }, ...(drums ? [] : [{ tick: 0, bytes: [0xc0 | channel, staff.program] }]), ...notes])
   })
   return new Uint8Array([...chunk('MThd', [0, 1, 0, tracks.length + 1, PPQ >> 8, PPQ & 0xff]), ...conductor, ...tracks.flat()])
 }

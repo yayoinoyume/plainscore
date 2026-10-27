@@ -93,7 +93,9 @@ export const toAbc = (r: Rendering) => {
   }
   const present = new Set(r.events.map(voiceOf))
   const grandUsed = (staff: Staff) => present.has(`${staff.id}R`) || present.has(`${staff.id}L`)
+  const drum = (staff: Staff) => staff.clef === 'perc'
   const voices: Voice[] = staves.flatMap((staff) => {
+    if (drum(staff)) return present.has(staff.id) ? [{ id: staff.id, staff, hand: null, clef: staff.clef }] : []
     if (!staff.grand) return present.has(staff.id) ? [{ id: staff.id, staff, hand: null, clef: staff.clef }] : []
     const hands: Voice[] = [
       { id: `${staff.id}R`, staff, hand: 'R', clef: 'treble' },
@@ -139,7 +141,7 @@ export const toAbc = (r: Rendering) => {
   const marked = signs(r, voices, voiceOf)
   const written = voices.map((v, i) => {
     if (!said.has(v.staff.id)) said.set(v.staff.id, new Map())
-    const style = { inner: v.hand === 'Inner', rings: v.staff.rings, clef: v.clef }
+    const style = { inner: v.hand === 'Inner', rings: v.staff.rings, clef: v.clef, drum: drum(v.staff) }
     const remark = v.hand === 'Inner' || v.hand === 'L' ? undefined : notes.get(v.staff.id)
     return writeVoice(sheet, style, r.events.filter((e) => voiceOf(e) === v.id), i === 0, said.get(v.staff.id)!, remark, marked.get(v.id))
   })

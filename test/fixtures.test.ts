@@ -8,6 +8,7 @@ import { DEFAULT_SEED, render } from '../src/render.ts'
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const bgm = parseScore(read('examples/bgm.score'), 'bgm.score')
 const road = parseScore(read('examples/road.score'), 'road.score')
+const band = parseScore(read('examples/band.score'), 'band.score')
 
 const TRACKS = [
   { name: 'overview', score: bgm, piece: 'theme', variant: 'overview' },
@@ -15,6 +16,7 @@ const TRACKS = [
   { name: 'read', score: bgm, piece: 'theme', variant: 'read' },
   { name: 'cosmos', score: bgm, piece: 'stars', variant: null },
   { name: 'road', score: road, piece: 'road', variant: null },
+  { name: 'band', score: band, piece: 'band', variant: null },
 ]
 
 describe.each(TRACKS)('$name matches its fixtures', ({ name, score, piece, variant }) => {

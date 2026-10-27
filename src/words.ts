@@ -51,6 +51,13 @@ export const MODES: Record<string, number[]> = {
   lydian: [0, 2, 4, 6, 7, 9, 11],
   mixolydian: [0, 2, 4, 5, 7, 9, 10],
 }
+// General MIDI percussion key map; a drums part names these instead of pitches.
+export const DRUMS: Record<string, number> = {
+  kick: 36, snare: 38, rim: 37, clap: 39, stick: 31,
+  hh: 42, 'hh-open': 46, 'hh-pedal': 44, ride: 51, 'ride-bell': 53, crash: 49, splash: 55, china: 52,
+  tom1: 48, tom2: 45, tom3: 43, 'tom-floor': 41, tamb: 54, cowbell: 56,
+}
+
 const NOTE_VALUES: Record<string, number> = { w: 8, h: 4, q: 2, e: 1, s: 0.5 }
 const PITCH_CLASSES: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
 
@@ -104,7 +111,7 @@ export const count = (word: string) => {
   return (Number(m[1] ?? 1) - 1) * BAR + (Number(m[2]) - 1) * 2 + (m[3] ? SUBDIVISIONS[m[3]] : 0)
 }
 
-export const cue = (words: string[], isInst: (word: string) => boolean): Cue => {
+export const cue = (words: string[], isInst: (word: string) => boolean, drum = false): Cue => {
   const [first, ...rest] = words
   const out: Cue = { at: count(first), pitches: [], length: 0, accent: 0, roll: { ms: 0 }, late: { ms: 0 } }
   if (rest[0] === 'Ped.' || rest[0] === '*') {
@@ -115,7 +122,12 @@ export const cue = (words: string[], isInst: (word: string) => boolean): Cue => 
     return out
   }
   if (rest.length && isInst(rest[0])) out.inst = rest.shift()
-  while (rest.length && !isDuration(rest[0])) out.pitches.push(pitch(rest.shift()!))
+  while (rest.length && !isDuration(rest[0])) {
+    const word = rest[0]
+    if (drum && !(word in DRUMS)) throw new Error(`"${word}" is not a drum; use ${Object.keys(DRUMS).join(' ')}`)
+    if (!drum && word in DRUMS) throw new Error(`"${word}" is a drum; give the part a drums instrument`)
+    out.pitches.push(pitch(rest.shift()!))
+  }
   if (!out.pitches.length || !rest.length) throw new Error('a cue needs a count, pitches and a duration')
   out.length = duration(rest.shift()!)
   while (rest.length) {
@@ -128,7 +140,7 @@ export const cue = (words: string[], isInst: (word: string) => boolean): Cue => 
   return out
 }
 
-export const line = (bars: string) => {
+export const line = (bars: string, drum = false) => {
   const notes: LineNote[] = []
   const hairpins: Hairpin[] = []
   let at = 0
@@ -156,7 +168,15 @@ export const line = (bars: string) => {
         open = { from: notes.length, up: words[i++] === '<', level }
       }
       const length = duration(words[i + 1] ?? '')
-      if (words[i] !== 'r') notes.push({ at, midi: note(words[i]), length, ...(level === undefined ? {} : { dynamic: level }) })
+      const sound = (word: string) => {
+        if (drum) {
+          if (!(word in DRUMS)) throw new Error(`"${word}" is not a drum; use ${Object.keys(DRUMS).join(' ')}`)
+          return DRUMS[word]
+        }
+        if (word in DRUMS) throw new Error(`"${word}" is a drum; give the part a drums instrument`)
+        return note(word)
+      }
+      if (words[i] !== 'r') notes.push({ at, midi: sound(words[i]), length, ...(level === undefined ? {} : { dynamic: level }) })
       at += length
     }
     if (at - start !== BAR) throw new Error(`bar "${bar}" lasts ${at - start} eighths, not ${BAR}`)

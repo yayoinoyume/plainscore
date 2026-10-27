@@ -1,0 +1,49 @@
+score 0.2
+# A band: steel guitar, clean electric, a driven lead and a kit.
+#   The drums part names hits instead of pitches; everything else reads the chords.
+
+title   Small Band
+by      You
+
+instruments
+  piano   piano
+  gtr     guitar
+  egtr    electric
+  lead    distortion
+  kit     drums
+
+piece band  Small Band
+  meter  4/4
+  tempo  q = 100
+  key    A minor
+
+  chords verse  — bass | voicing
+    Am     A2  | A3 C4 E4
+    F      F2  | F3 A3 C4
+    C      C3  | C4 E4 G4
+    G      G2  | G3 B3 D4
+
+  part keys  piano  mp  — the pad
+    1    bass   w   >
+    3    upper  h   soft
+
+  part strum  gtr  mf  — the steel guitar
+    1    bass    q
+    1&   chord   q.  roll 25ms
+    3    upper   h   soft
+
+  part solo  lead  f  lead  — the driven line
+    | A4 e  C5 e  E5 e  A5 e  G5 e  E5 e  C5 e  A4 e |
+    | F4 e  A4 e  C5 e  F5 e  E5 e  C5 e  A4 e  F4 e |
+
+  part riff  egtr  mf  — the clean electric, on the offbeats
+    2    t1+8va  e   soft
+    4&   t2+8va  e   soft
+
+  part beat  kit  mf
+    | kick e  r e  snare e  r e  kick e  r e  snare e  r e |
+    | kick e  r e  snare e  r e  kick e  kick e  snare e  r e |
+
+  form  loop
+    A  verse
+      keys, strum, solo, riff, beat

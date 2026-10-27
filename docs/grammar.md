@@ -21,7 +21,8 @@ piece waltz  Small Waltz        <id>  <title>; a file can hold several pieces
   …
 ```
 
-- Families: `piano harp violins violas cello bass flute oboe clarinet bassoon horn trumpet voice synth`. The family sets the clef, MIDI program, pedal and how notes are engraved. The instrument name is yours.
+- Families: `piano harp guitar electric distortion violins violas cello bass flute oboe clarinet bassoon horn trumpet voice synth drums`. The family sets the clef, MIDI program, pedal and how notes are engraved. The instrument name is yours.
+- `guitar` is a steel guitar (program 25), `electric` a clean electric (27), `distortion` a driven electric (30); all three ring like a plucked string and take no pedal. `drums` is a percussion staff: name the hit instead of a pitch (see [Drums](#drums)).
 - Instrument names and part names must differ.
 
 ## Piece header
@@ -89,6 +90,33 @@ Every part has a name and, unless each cue names one, an instrument. Header word
 ```
 
 Each bar must add up to a whole note.
+
+### Drums
+
+A `drums` instrument turns its parts from pitches into hits. The same bar syntax applies, but each word is a drum:
+
+```
+instruments
+  kit  drums
+
+part beat  kit  mf
+  | kick e  r e  snare e  r e  kick e  r e  snare e  r e |
+```
+
+| word | GM | word | GM | word | GM |
+|---|---|---|---|---|---|
+| `kick` | 36 | `snare` | 38 | `rim` | 37 |
+| `clap` | 39 | `stick` | 31 | `tamb` | 54 |
+| `hh` | 42 | `hh-open` | 46 | `hh-pedal` | 44 |
+| `ride` | 51 | `ride-bell` | 53 | `crash` | 49 |
+| `splash` | 55 | `china` | 52 | `cowbell` | 56 |
+| `tom1` | 48 | `tom2` | 45 | `tom3` | 43 |
+| `tom-floor` | 41 |
+
+- A drums part ignores `+8va` and the section's `in E`: a hit has no key. Chord tones (`bass`, `t1`, `top` …) are not drum words, so cues on a drums part must name the hit.
+- The MIDI export sends a drums staff to channel 10 (zero-based 9) and writes no program change there, which is how General MIDI says "these are percussion".
+- ABC writes the staff as `clef=perc` with the drum words as note names, so a reader sees `kick` and `snare` rather than pitches.
+- A pitch on a drums part, or a drum word on a pitched part, is an error naming the line.
 
 ### Cues
 
