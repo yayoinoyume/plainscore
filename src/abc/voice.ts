@@ -42,6 +42,7 @@ const DRUM_MIDIS = [...new Set(Object.values(DRUMS))].sort((a, b) => a - b)
 const DRUM_POSITIONS: Record<number, number> = Object.fromEntries(DRUM_MIDIS.map((midi, i) => [midi, i]))
 
 const abcPitch = (pos: number) => {
+  if (pos > 18) throw new Error(`drum position ${pos} has no abcjs key; pitchMap reaches 0-16 and two more borrow a sharp`)
   if (pos > 16) return `^${DRUM_LETTERS[(pos - 17) * 2 + 1]}`
   const letter = DRUM_LETTERS[pos % 7]
   if (pos < 7) return letter
