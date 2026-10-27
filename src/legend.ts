@@ -12,6 +12,9 @@ export const LEGEND = `# Legend (score 0.2)
 #   overlap X: each note rings X past its value. ring X: each note rings for X.
 #   "1 Ped." presses or changes the sustain pedal; "4& *" lifts it.
 #   doubles P: plays P's notes on its own instrument. inner: engraved as a voice of its own on the staff.
+#   In a drums part, name the hit instead of a pitch: kick snare rim clap stick
+#     hh hh-open hh-pedal ride ride-bell crash splash china tom1 tom2 tom3 tom-floor tamb cowbell.
+#   A drums part takes no key shift; it plays on the MIDI percussion channel.
 #   Form: a row plays only the parts it names. 85% shades a part; "92%-75%" shades bar by bar;
 #     "bars 3-4"; "on 1 and 3"; breath = all but lead and once parts stop for the last eighth;
 #     cut = whatever still rings stops at the downbeat. "in E" moves the section to E.

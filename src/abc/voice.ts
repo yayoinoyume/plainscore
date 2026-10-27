@@ -2,6 +2,7 @@ import type { ScoreEvent } from '../expand.ts'
 import type { Clef } from '../families.ts'
 import type { Rendering } from '../render.ts'
 import type { Pedal } from '../words.ts'
+import { DRUMS } from '../words.ts'
 import { BAR, BEAT, NOTE_LENGTHS, REST_LENGTHS, keyName, median, nearestDynamic, onGrid, speller, split } from './spell.ts'
 
 export interface Sheet extends Pick<Rendering, 'keys' | 'mode' | 'tonic' | 'bars'> {
@@ -12,6 +13,7 @@ export interface VoiceStyle {
   inner: boolean
   rings: boolean
   clef: Clef
+  drum?: boolean
 }
 
 interface Onset {
@@ -27,6 +29,8 @@ interface Onset {
 const OTTAVA_TOP = 88
 const OTTAVA_FLOOR = 72
 const SIMILE_AFTER = 2
+
+const DRUM_NAMES: Record<number, string> = Object.fromEntries(Object.entries(DRUMS).map(([name, midi]) => [midi, name]))
 
 const onsets = (events: ScoreEvent[]) => {
   const byPos = new Map<number, Onset>()
@@ -104,7 +108,7 @@ export const writeVoice = (sheet: Sheet, style: VoiceStyle, events: ScoreEvent[]
   let s = spellers.get(0) ?? speller(sheet.tonic, sheet.mode)
   const total = sheet.bars * BAR
   const list = onsets(events)
-  const octaves = style.clef === 'treble' ? ottava(list) : []
+  const octaves = style.clef === 'treble' && !style.drum ? ottava(list) : []
   const bars: string[][] = Array.from({ length: sheet.bars }, () => [])
   const prefixes = new Map<number, string[]>()
   const prefix = (pos: number, text: string) => prefixes.set(pos, [...(prefixes.get(pos) ?? []), text])
@@ -154,7 +158,7 @@ export const writeVoice = (sheet: Sheet, style: VoiceStyle, events: ScoreEvent[]
     if (bar !== current) {
       const key = sheet.keys.find((k) => k.bar === bar && bar > 0)
       // abcjs crashes on an inline key in the second voice of a staff, which follows the staff's key anyway; and without a clef the key resets the staff to treble.
-      if (key && !style.inner) bars[bar].push(`[K:${keyName(key.tonic, sheet.mode)} clef=${style.clef}]`)
+      if (key && !style.inner && !style.drum) bars[bar].push(`[K:${keyName(key.tonic, sheet.mode)} clef=${style.clef}]`)
       s = spellers.get(bar) ?? s
       accidentals = s.bar()
       current = bar
@@ -165,7 +169,7 @@ export const writeVoice = (sheet: Sheet, style: VoiceStyle, events: ScoreEvent[]
     prefixes.delete(p.pos)
     if (p.midis && p.accent) marks.push('!>!')
     if (p.midis && p.arpeggio) marks.push('!arpeggio!')
-    const names = p.midis?.map((m) => s.note(m, accidentals))
+    const names = p.midis?.map((m) => (style.drum ? DRUM_NAMES[m] ?? String(m) : s.note(m, accidentals)))
     const body = !names ? `${style.inner ? 'x' : 'z'}${len}` : names.length === 1 ? `${names[0]}${len}` : `[${names.join('')}]${len}`
     const token = { beat: Math.floor(p.pos / BEAT), beamable: p.midis !== null && p.len < BEAT }
     const glue = last && last.beamable && token.beamable && last.beat === token.beat ? '' : ' '

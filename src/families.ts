@@ -1,4 +1,4 @@
-export type Clef = 'treble' | 'alto' | 'bass'
+export type Clef = 'treble' | 'alto' | 'bass' | 'perc'
 
 export interface Family {
   clef: Clef
@@ -13,6 +13,9 @@ const plain = (clef: Clef, program: number): Family => ({ clef, grand: false, pr
 export const FAMILIES: Record<string, Family> = {
   piano: { clef: 'treble', grand: true, program: 0, pedal: true, rings: true },
   harp: { clef: 'treble', grand: false, program: 46, pedal: false, rings: true },
+  guitar: { clef: 'treble', grand: false, program: 25, pedal: false, rings: true },
+  electric: plain('treble', 27),
+  distortion: plain('treble', 30),
   violins: plain('treble', 48),
   violas: plain('alto', 41),
   cello: plain('bass', 42),
@@ -25,7 +28,10 @@ export const FAMILIES: Record<string, Family> = {
   trumpet: plain('treble', 56),
   voice: plain('treble', 52),
   synth: plain('treble', 88),
+  drums: plain('perc', 0),
 }
+
+export const isDrumFamily = (family: string | undefined) => family !== undefined && FAMILIES[family]?.clef === 'perc'
 
 export const ARTICULATION_PROGRAMS: Record<string, number> = { 'pizz.': 45 }
 export const RINGING_ARTICULATIONS = new Set(['pizz.'])

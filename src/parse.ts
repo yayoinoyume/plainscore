@@ -1,4 +1,4 @@
-import { FAMILIES as FAMILY_TABLE } from './families.ts'
+import { FAMILIES as FAMILY_TABLE, isDrumFamily } from './families.ts'
 import { BAR, type Chord, type Cue, DYNAMICS, type Hairpin, type LineNote, MODES, SHIFTS, count, cue, duration, dynamic, header, isDuration, line, note, prose, tonic } from './words.ts'
 
 export const VERSION = '0.2'
@@ -25,6 +25,7 @@ export interface AdLib {
 export interface Part {
   name: string
   inst?: string
+  drum: boolean
   articulation?: Articulation
   dynamic?: number
   overlap?: number
@@ -188,15 +189,16 @@ const adLib = (rows: string[][]): AdLib => {
   }
 }
 
-const partHeader = (words: string[], isInst: (word: string) => boolean): Part & { adlibRows?: string[][] } => {
+const partHeader = (words: string[], isInst: (word: string) => boolean, isDrum: (word: string) => boolean): Part & { adlibRows?: string[][] } => {
   const [name, ...rest] = prose(words)
   if (!name) throw new Error('name the part, as "part flow  piano"')
   if (isInst(name)) throw new Error(`"${name}" is an instrument; give the part its own name`)
-  const part: Part & { adlibRows?: string[][] } = { name, once: false, lead: false, inner: false, cues: [], notes: [], hairpins: [], span: 0 }
+  const part: Part & { adlibRows?: string[][] } = { name, drum: false, once: false, lead: false, inner: false, cues: [], notes: [], hairpins: [], span: 0 }
   while (rest.length) {
     const word = rest.shift()!
     if (isInst(word) && !part.inst) {
       part.inst = word
+      part.drum = isDrum(word)
       if ((ARTICULATIONS as readonly string[]).includes(rest[0])) part.articulation = rest.shift() as Articulation
     } else if ((ARTICULATIONS as readonly string[]).includes(word)) throw new Error(`write "${word}" right after the instrument, as "violins ${word}"`)
     else if (word in DYNAMICS) part.dynamic = DYNAMICS[word]
@@ -293,6 +295,7 @@ export const parseScore = (text: string, file = 'score'): ScoreFile => {
   const score: ScoreFile = { file, version: '', title: '', by: '', after: '', instruments: [], pieces: [], lines: new WeakMap() }
   const { lines } = score
   const isInst = (word: string) => score.instruments.some((i) => i.name === word)
+  const isDrum = (word: string) => isDrumFamily(score.instruments.find((i) => i.name === word)?.family)
   const adlibs = new Map<Part, { rows: string[][]; line: number }>()
   const rowText = new Map<Row, string[]>()
   let version = ''
@@ -367,7 +370,7 @@ export const parseScore = (text: string, file = 'score'): ScoreFile => {
           p.progressions.set(name, { barsPerChord: bars ? (COUNTS[bars] ?? Number(bars)) : 1, chords: [], lengths: [] })
           block = `chords ${name}`
         } else if (key === 'part') {
-          const part = partHeader(rest, isInst)
+          const part = partHeader(rest, isInst, isDrum)
           if (p.parts.some((x) => x.name === part.name)) throw new Error(`there is already a part "${part.name}"`)
           if (part.adlibRows) adlibs.set(part, { rows: part.adlibRows, line: n })
           delete part.adlibRows
@@ -398,14 +401,14 @@ export const parseScore = (text: string, file = 'score'): ScoreFile => {
         else if (part.doubles) throw new Error(`${part.name} doubles ${part.doubles.source}; it has no notes of its own`)
         else if (raw.startsWith('|')) {
           if (part.cues.length) throw new Error('bars and cues cannot share a part')
-          const bars = line(raw)
+          const bars = line(raw, part.drum)
           if (bars.hairpins.length) needs(next(), '"<" and ">"')
           part.notes.push(...bars.notes.map((x) => ({ ...x, at: x.at + part.span })))
           part.hairpins.push(...bars.hairpins.map((x) => ({ ...x, at: x.at + part.span, end: x.end + part.span })))
           part.span += bars.span
         } else {
           if (part.span) throw new Error('bars and cues cannot share a part')
-          const parsed = cue(words, isInst)
+          const parsed = cue(words, isInst, part.drum)
           if (parsed.at % 1) needs(next(), `"${words[0]}"`)
           lines.set(parsed, n)
           part.cues.push(parsed)
