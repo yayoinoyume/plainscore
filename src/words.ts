@@ -111,22 +111,30 @@ export const count = (word: string) => {
   return (Number(m[1] ?? 1) - 1) * BAR + (Number(m[2]) - 1) * 2 + (m[3] ? SUBDIVISIONS[m[3]] : 0)
 }
 
-export const cue = (words: string[], isInst: (word: string) => boolean, drum = false): Cue => {
+export const cue = (words: string[], isInst: (word: string) => boolean, drum = false, isDrum: (word: string) => boolean = () => false): Cue => {
   const [first, ...rest] = words
   const out: Cue = { at: count(first), pitches: [], length: 0, accent: 0, roll: { ms: 0 }, late: { ms: 0 } }
   if (rest[0] === 'Ped.' || rest[0] === '*') {
+    if (drum) throw new Error('a drums part takes no pedal')
     const [mark, ...more] = rest
     out.pedal = mark === 'Ped.'
     if (more[0] === 'late') out.late = time(more[1] ?? '')
     else if (more.length) throw new Error('a pedal cue is "<count> Ped." or "<count> *", optionally "late X"')
     return out
   }
-  if (rest.length && isInst(rest[0])) out.inst = rest.shift()
+  if (rest.length && isInst(rest[0])) {
+    out.inst = rest.shift()!
+    drum = drum || isDrum(out.inst)
+  }
   while (rest.length && !isDuration(rest[0])) {
-    const word = rest[0]
-    if (drum && !(word in DRUMS)) throw new Error(`"${word}" is not a drum; use ${Object.keys(DRUMS).join(' ')}`)
-    if (!drum && word in DRUMS) throw new Error(`"${word}" is a drum; give the part a drums instrument`)
-    out.pitches.push(pitch(rest.shift()!))
+    const word = rest.shift()!
+    if (drum) {
+      if (!Object.hasOwn(DRUMS, word)) throw new Error(`"${word}" is not a drum; use ${Object.keys(DRUMS).join(' ')}`)
+      out.pitches.push(DRUMS[word])
+      continue
+    }
+    if (Object.hasOwn(DRUMS, word)) throw new Error(`"${word}" is a drum; give the part a drums instrument`)
+    out.pitches.push(pitch(word))
   }
   if (!out.pitches.length || !rest.length) throw new Error('a cue needs a count, pitches and a duration')
   out.length = duration(rest.shift()!)
@@ -170,10 +178,10 @@ export const line = (bars: string, drum = false) => {
       const length = duration(words[i + 1] ?? '')
       const sound = (word: string) => {
         if (drum) {
-          if (!(word in DRUMS)) throw new Error(`"${word}" is not a drum; use ${Object.keys(DRUMS).join(' ')}`)
+          if (!Object.hasOwn(DRUMS, word)) throw new Error(`"${word}" is not a drum; use ${Object.keys(DRUMS).join(' ')}`)
           return DRUMS[word]
         }
-        if (word in DRUMS) throw new Error(`"${word}" is a drum; give the part a drums instrument`)
+        if (Object.hasOwn(DRUMS, word)) throw new Error(`"${word}" is a drum; give the part a drums instrument`)
         return note(word)
       }
       if (words[i] !== 'r') notes.push({ at, midi: sound(words[i]), length, ...(level === undefined ? {} : { dynamic: level }) })

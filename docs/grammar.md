@@ -99,8 +99,8 @@ A `drums` instrument turns its parts from pitches into hits. The same bar syntax
 instruments
   kit  drums
 
-part beat  kit  mf
-  | kick e  r e  snare e  r e  kick e  r e  snare e  r e |
+  part beat  kit  mf
+    | kick e  r e  snare e  r e  kick e  r e  snare e  r e |
 ```
 
 | word | GM | word | GM | word | GM |
@@ -113,9 +113,9 @@ part beat  kit  mf
 | `tom1` | 48 | `tom2` | 45 | `tom3` | 43 |
 | `tom-floor` | 41 |
 
-- A drums part ignores `+8va` and the section's `in E`: a hit has no key. Chord tones (`bass`, `t1`, `top` …) are not drum words, so cues on a drums part must name the hit.
+- A drums part ignores `+8va` and the section's `in E`: a hit has no key. Chord tones (`bass`, `t1`, `top` …) are not drum words, so cues on a drums part must name the hit. A drums part takes no pedal and cannot be `ad lib.` or double a pitched part.
 - The MIDI export sends a drums staff to channel 10 (zero-based 9) and writes no program change there, which is how General MIDI says "these are percussion".
-- ABC writes the staff as `clef=perc` with the drum words as note names, so a reader sees `kick` and `snare` rather than pitches.
+- ABC writes the staff as `clef=perc` and emits a `%%percmap` line per hit used, mapping it to a fixed pitch with an `x` notehead. abcjs renders that as a percussion staff; a reader sees the hits as crosses rather than pitches.
 - A pitch on a drums part, or a drum word on a pitched part, is an error naming the line.
 
 ### Cues

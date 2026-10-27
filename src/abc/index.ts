@@ -4,7 +4,7 @@ import type { Rendering } from '../render.ts'
 import { type Staff, layout } from '../staves.ts'
 import { DYNAMICS } from '../words.ts'
 import { keyName, onGrid } from './spell.ts'
-import { type Sheet, pedalVoice, writeVoice } from './voice.ts'
+import { type Sheet, drumMap, pedalVoice, writeVoice } from './voice.ts'
 
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
@@ -124,6 +124,8 @@ export const toAbc = (r: Rendering) => {
   const name = (v: Voice) => (v.hand === 'R' || !v.hand ? ` name="${v.staff.name}"` : '')
   const stem = (v: Voice) => (!split(v.staff) ? '' : v.hand === 'R' ? ' stem=up' : v.hand === 'Inner' ? ' stem=down' : '')
   const title = movement(r)
+  const drumStaves = staves.filter((s) => s.clef === 'perc' && present.has(s.id))
+  const perc = drumMap(r.events.filter((e) => drumStaves.some((s) => s.id === staffOf(e))))
   const header = [
     'X:1',
     `T:${r.title}`,
@@ -132,6 +134,7 @@ export const toAbc = (r: Rendering) => {
     'M:4/4',
     'L:1/16',
     `Q:1/4=${r.tempo}`,
+    ...perc.map(({ pitch, midi }) => `%%percmap ${pitch} ${midi} x`),
     `%%score ${group}`,
     ...voices.map((v) => `V:${v.id} clef=${v.clef}${name(v)}${stem(v)}`),
     ...[...pedals.keys()].map((id) => `V:${id}Pedal clef=bass`),
