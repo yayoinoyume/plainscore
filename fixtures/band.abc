@@ -4,8 +4,8 @@ C:Music by You
 M:4/4
 L:1/16
 Q:1/4=100
-%%percmap x1 36 x
-%%percmap x3 38 x
+%%percmap D 36 x
+%%percmap F 38 x
 %%score {(pianoR) (pianoL)} (gtr) (egtr) (lead) (kit)
 V:pianoR clef=treble name="Piano"
 V:pianoL clef=bass

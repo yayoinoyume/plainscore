@@ -6,6 +6,7 @@ import { toMidi } from '../src/midi.ts'
 import { parseScore } from '../src/parse.ts'
 import { render } from '../src/render.ts'
 import { layout } from '../src/staves.ts'
+import { drumMap } from '../src/abc/voice.ts'
 import { DRUMS } from '../src/words.ts'
 
 const text = `score 0.2
@@ -110,9 +111,10 @@ describe('the drums family', () => {
   it('engraves drum hits as legal ABC with a percmap per staff position', () => {
     const abc = toAbc(rendering)
     expect(abc).toContain('V:kit clef=perc name="Kit"')
-    // abcjs keys a percussion note by x + verticalPos, and a digit after a note is its length, not its octave.
-    expect(abc).toContain(`%%percmap x1 ${DRUMS.kick} x`)
-    expect(abc).toContain(`%%percmap x3 ${DRUMS.snare} x`)
+    // abcjs turns a percussion note into the key (accidental ?? 'x') + verticalPos and reads pitchMap,
+    // whose values are note names — so a %%percmap line must be keyed by the name, not by x1.
+    expect(abc).toContain(`%%percmap D ${DRUMS.kick} x`)
+    expect(abc).toContain(`%%percmap F ${DRUMS.snare} x`)
     const kit = abc.split('\n').filter((line) => line.startsWith('[V:kit]')).join('\n')
     expect(kit).not.toMatch(/\b(kick|snare)\b/)
     for (const note of kit.match(/[A-Ga-g][,']*\d*/g) ?? []) {
@@ -120,6 +122,13 @@ describe('the drums family', () => {
       expect(letters).toMatch(/^[A-G]$|^[a-g]['`']*$/)
       expect(Number(note.slice(letters.length) || 1)).toBeLessThanOrEqual(16)
     }
+  })
+
+  it('keys every drum on its own abcjs note name', () => {
+    const names = drumMap(Object.values(DRUMS).map((midi) => ({ midi }) as never)).map((d) => d.pitch)
+    expect(names.length).toBe(Object.keys(DRUMS).length)
+    expect(new Set(names).size).toBe(names.length)
+    expect(names.every((n) => /^\^?[A-Ga-g]'*$/.test(n))).toBe(true)
   })
 
   it('takes a drum cue and refuses a pedal', () => {
