@@ -30,15 +30,19 @@ const OTTAVA_TOP = 88
 const OTTAVA_FLOOR = 72
 const SIMILE_AFTER = 2
 
-// A drum hit needs a staff position, not a pitch. abcjs looks a percussion note up by
-// (accidental ?? 'x') + verticalPos, so x0 is C, x7 is c, x14 is c' — the letters are ABC's
-// octave marks (lowercase, then apostrophes), never digits, because a digit after a note is its length.
+// A drum hit needs a staff position, not a pitch. abcjs turns a percussion note into a percmap key
+// with pitches-to-perc: (accidental ?? 'x') + verticalPos, then reads pitchMap, whose values are the
+// note names — so "C" at position 0, "c" at 7, "c'" at 14, and "^D" for a sharpened D. That note name
+// is what a %%percmap line must be keyed by. pitchMap stops at 16, so the last two hits borrow an
+// accidental on the low lines rather than climbing off the table. The letters are ABC's octave marks
+// (lowercase, then apostrophes), never digits, because a digit after a note is its length.
 // GM keys are sorted so a hit always lands on the same line, whatever order the parts come in.
 const DRUM_LETTERS = 'CDEFGAB'
 const DRUM_MIDIS = [...new Set(Object.values(DRUMS))].sort((a, b) => a - b)
 const DRUM_POSITIONS: Record<number, number> = Object.fromEntries(DRUM_MIDIS.map((midi, i) => [midi, i]))
 
 const abcPitch = (pos: number) => {
+  if (pos > 16) return `^${DRUM_LETTERS[(pos - 17) * 2 + 1]}`
   const letter = DRUM_LETTERS[pos % 7]
   if (pos < 7) return letter
   return letter.toLowerCase() + "'".repeat(Math.floor(pos / 7) - 1)
