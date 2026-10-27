@@ -500,7 +500,9 @@ const checkPiece = (score: ScoreFile, p: PieceSource, rowText: Map<Row, string[]
       const source = part(x.doubles.source)
       if (!source) fail(where, `"${x.doubles.source}" is not a part`)
       if (source!.doubles || source!.adlib) fail(where, `${x.name} cannot double ${source!.name}, which is itself a double or ad lib.`)
-      if (source!.drum !== x.drum) fail(where, `${x.name} cannot double ${source!.name}: one is a drums part and the other is not`)
+      const drumOf = (name?: string) => isDrumFamily(score.instruments.find((i) => i.name === name)?.family)
+      if (drumOf(x.inst ?? source!.inst) !== drumOf(source!.inst ?? x.inst))
+        fail(where, `${x.name} cannot double ${source!.name}: one is a drums part and the other is not`)
     }
     if (x.adlib) {
       if (!x.inst) fail(where, `the ad lib. part ${x.name} needs an instrument`)

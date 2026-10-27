@@ -246,7 +246,7 @@ export const expand = (score: ScoreFile, id: string, variant: string | null = nu
               rolled: roll > 0,
               level: (level + rise(i)) * shade(k),
               velocity: (level + c.accent + rise(i)) * shade(k),
-              midi: midi + shift,
+              midi: c.drum ? midi : midi + shift,
               length: c.length,
               written: c.length,
               offset: late + i * roll,

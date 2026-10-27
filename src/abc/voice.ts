@@ -30,18 +30,26 @@ const OTTAVA_TOP = 88
 const OTTAVA_FLOOR = 72
 const SIMILE_AFTER = 2
 
-// Each GM percussion key gets one fixed ABC pitch, so a drum staff is legal ABC that abcjs renders
-// with an x notehead through %%percmap. Sorted by GM key, so the mapping never depends on part order.
+// A drum hit needs a staff position, not a pitch. abcjs looks a percussion note up by
+// (accidental ?? 'x') + verticalPos, so x0 is C, x7 is c, x14 is c' — the letters are ABC's
+// octave marks (lowercase, then apostrophes), never digits, because a digit after a note is its length.
+// GM keys are sorted so a hit always lands on the same line, whatever order the parts come in.
 const DRUM_LETTERS = 'CDEFGAB'
-const DRUM_PITCHES: Record<number, string> = Object.fromEntries(
-  [...new Set(Object.values(DRUMS))]
-    .sort((a, b) => a - b)
-    .map((midi, i) => [midi, `${DRUM_LETTERS[i % 7]}${4 + Math.floor(i / 7)}`]),
-)
+const DRUM_MIDIS = [...new Set(Object.values(DRUMS))].sort((a, b) => a - b)
+const DRUM_POSITIONS: Record<number, number> = Object.fromEntries(DRUM_MIDIS.map((midi, i) => [midi, i]))
+
+const abcPitch = (pos: number) => {
+  const letter = DRUM_LETTERS[pos % 7]
+  if (pos < 7) return letter
+  return letter.toLowerCase() + "'".repeat(Math.floor(pos / 7) - 1)
+}
+
+// abcjs only accepts a GM sound 35-81, so a hit below that keeps its line but borrows a nearby sound.
+const percSound = (midi: number) => (midi >= 35 && midi <= 81 ? midi : 35)
 
 export const drumMap = (events: ScoreEvent[]) => {
-  const used = [...new Set(events.map((e) => e.midi))].filter((m) => m in DRUM_PITCHES).sort((a, b) => a - b)
-  return used.map((midi) => ({ pitch: DRUM_PITCHES[midi], midi }))
+  const used = [...new Set(events.map((e) => e.midi))].filter((m) => m in DRUM_POSITIONS).sort((a, b) => a - b)
+  return used.map((midi) => ({ pos: DRUM_POSITIONS[midi], pitch: abcPitch(DRUM_POSITIONS[midi]), midi, sound: percSound(midi) }))
 }
 
 const onsets = (events: ScoreEvent[]) => {
@@ -181,9 +189,12 @@ export const writeVoice = (sheet: Sheet, style: VoiceStyle, events: ScoreEvent[]
     prefixes.delete(p.pos)
     if (p.midis && p.accent) marks.push('!>!')
     if (p.midis && p.arpeggio) marks.push('!arpeggio!')
-    const names = p.midis?.map((m) =>
-      style.drum ? (DRUM_PITCHES[m] ?? (() => { throw new Error(`no ABC pitch for drum ${m}; add it to DRUMS`) })()) : s.note(m, accidentals),
-    )
+    const names = p.midis?.map((m) => {
+      if (!style.drum) return s.note(m, accidentals)
+      const pos = DRUM_POSITIONS[m]
+      if (pos === undefined) throw new Error(`no staff position for drum ${m}; add it to DRUMS`)
+      return abcPitch(pos)
+    })
     const body = !names ? `${style.inner ? 'x' : 'z'}${len}` : names.length === 1 ? `${names[0]}${len}` : `[${names.join('')}]${len}`
     const token = { beat: Math.floor(p.pos / BEAT), beamable: p.midis !== null && p.len < BEAT }
     const glue = last && last.beamable && token.beamable && last.beat === token.beat ? '' : ' '

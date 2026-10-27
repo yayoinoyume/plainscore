@@ -115,7 +115,7 @@ instruments
 
 - A drums part ignores `+8va` and the section's `in E`: a hit has no key. Chord tones (`bass`, `t1`, `top` …) are not drum words, so cues on a drums part must name the hit. A drums part takes no pedal and cannot be `ad lib.` or double a pitched part.
 - The MIDI export sends a drums staff to channel 10 (zero-based 9) and writes no program change there, which is how General MIDI says "these are percussion".
-- ABC writes the staff as `clef=perc` and emits a `%%percmap` line per hit used, mapping it to a fixed pitch with an `x` notehead. abcjs renders that as a percussion staff; a reader sees the hits as crosses rather than pitches.
+- ABC writes the staff as `clef=perc`. Each hit gets a fixed staff position (`x0`..`x18`, the key abcjs looks a percussion note up by) and the export emits a `%%percmap` line for it, so abcjs draws a percussion staff with `x` noteheads. GM `stick` (31) is below the range abcjs accepts, so it keeps its line but borrows sound 35.
 - A pitch on a drums part, or a drum word on a pitched part, is an error naming the line.
 
 ### Cues
