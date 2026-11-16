@@ -76,7 +76,7 @@ export const renderStems = async (r: Rendering, sounds: Sounds, rate: number) =>
             messages.push({ time: at(p.at), order: 1, kind: 'pedal', midi: 64, value: 0 })
             if (p.down) messages.push({ time: at(p.at + 1 / 8), order: 2, kind: 'pedal', midi: 64, value: 127 })
           }
-        await playSoundfont(source, program ?? (articulation && ARTICULATION_PROGRAMS[articulation]) ?? family.program, messages, channels, rate)
+        await playSoundfont(source, program ?? (articulation && ARTICULATION_PROGRAMS[articulation]) ?? family.program, messages, channels, rate, family.clef === 'perc')
       } else {
         for (const e of events)
           playSampler(source, channels, rate, { midi: e.midi, at: at(e.step + e.offset), length: at(e.step + e.offset + e.length) - at(e.step + e.offset), velocity: e.velocity, attack: e.attack })

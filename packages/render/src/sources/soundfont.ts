@@ -2,6 +2,7 @@ import { BasicSoundBank, SoundBankLoader, SpessaSynthProcessor } from 'spessasyn
 import type { SoundfontSource } from './types.ts'
 
 const BLOCK = 128
+const PERCUSSION = 9
 const banks = new WeakMap<ArrayBuffer, BasicSoundBank>()
 
 export const loadBank = async (buffer: ArrayBuffer) => {
@@ -22,12 +23,16 @@ export interface SynthMessage {
   value: number
 }
 
-export const playSoundfont = async (source: SoundfontSource, program: number, messages: SynthMessage[], out: Float32Array[], rate: number) => {
+export const playSoundfont = async (source: SoundfontSource, program: number, messages: SynthMessage[], out: Float32Array[], rate: number, drums = false) => {
   const bank = await loadBank(source.soundfont)
   const synth = new SpessaSynthProcessor(rate, { effectsEnabled: false, eventsEnabled: false })
   synth.soundBankManager.addSoundBank(bank, 'main')
-  if (source.bank) synth.controllerChange(0, 0, source.bank)
-  synth.programChange(0, source.preset ?? program)
+  // MIDI channel 9 is the kit; a bank or program change there would move it off the GM drums.
+  const channel = drums ? PERCUSSION : 0
+  if (!drums) {
+    if (source.bank) synth.controllerChange(0, 0, source.bank)
+    synth.programChange(0, source.preset ?? program)
+  }
   const sorted = [...messages].sort((a, b) => a.time - b.time || a.order - b.order)
   const frames = out[0].length
   const left = new Float32Array(frames)
@@ -37,9 +42,9 @@ export const playSoundfont = async (source: SoundfontSource, program: number, me
   while (at < frames) {
     while (i < sorted.length && Math.round(sorted[i].time * rate) <= at) {
       const m = sorted[i++]
-      if (m.kind === 'on') synth.noteOn(0, m.midi, m.value)
-      else if (m.kind === 'off') synth.noteOff(0, m.midi)
-      else synth.controllerChange(0, 64, m.value)
+      if (m.kind === 'on') synth.noteOn(channel, m.midi, m.value)
+      else if (m.kind === 'off') synth.noteOff(channel, m.midi)
+      else synth.controllerChange(channel, 64, m.value)
     }
     const next = i < sorted.length ? Math.round(sorted[i].time * rate) : frames
     const n = Math.min(BLOCK, frames - at, Math.max(1, next - at))
